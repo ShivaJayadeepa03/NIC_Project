@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIC Code Search</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo">
+            <img src="logo.jpeg" alt="Application Logo" class="app-logo">
+        </div>
+        <nav class="nav-buttons">
+            <a href="/">
+                <button class="btn">Home</button>
+            </a>
+            <a href="/info">
+                <button class="btn">Categories</button>
+            </a>
+            <a href="/search">
+                <button class="btn active">Code Lookup</button>
+            </a>
+        </nav>
+    </header>
+
+    <main class="container search-page">
+        <section class="info-intro">
+            <h2>Search by NIC Code</h2>
+            <p>Enter a NIC division, group, class or subclass code to see the corresponding business activity description.</p>
+        </section>
+
+        <section class="search-section">
+            <div class="search-box" style="flex-direction: column; gap: 12px;">
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <input
+                        id="codeInput"
+                        type="text"
+                        placeholder="Examples: 01, 011, 0111, 01111"
+                        style="width: 100%; padding: 10px; font-size: 1rem;"
+                    />
+                    <button class="btn-search" id="searchButton" style="white-space: nowrap;">Search Code</button>
+                </div>
+        </section>
+
+        <section class="results-wrapper">
+            <div class="results-header">
+                <h3 id="searchTitle">Search Result</h3>
+            </div>
+            <div id="searchResult" class="codes-list" style="background:#fafafa; border-radius:8px; padding:16px; min-height:40px;">
+                <div class="placeholder-state">
+                    <p>Start by picking an example above or entering a NIC code.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="info-grid" style="margin-top: 32px;">
+            <div class="card">
+                <h3>What you can search</h3>
+                <p>Look up high‑level divisions (like Agriculture or Manufacturing) or very specific subclasses such as individual crop growing or service activities.</p>
+            </div>
+            <div class="card">
+                <h3>Use with registration</h3>
+                <p>Once you find the right code, you can copy it into Udyam, MCA or GST registration forms to keep your classification consistent.</p>
+            </div>
+            <div class="card">
+                <h3>Browse full directory</h3>
+                <p>Not sure which code to use? Go to the Info page and explore by section and division, then come back here to confirm a specific code.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 IntelliCode Systems | Standardizing Industrial Classification</p>
+    </footer>
+
+    <script>
+        window.onload = () => {
+            const input = document.getElementById('codeInput');
+            const btn = document.getElementById('searchButton');
+
+            btn.onclick = handleSearch;
+            input.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    handleSearch();
+                }
+            });
+
+            // Example chips
+            document.querySelectorAll('[data-example-code]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const code = el.getAttribute('data-example-code') || '';
+                    input.value = code;
+                    handleSearch();
+                });
+            });
+        };
+
+        async function handleSearch() {
+            const input = document.getElementById('codeInput');
+            const result = document.getElementById('searchResult');
+            const title = document.getElementById('searchTitle');
+
+            let code = (input.value || '').trim();
+            if (!code) {
+                result.innerHTML = '<p>Please enter a NIC code.</p>';
+                return;
+            }
+
+            // Remove spaces and normalize basic formatting
+            code = code.replace(/\s+/g, '');
+
+            // Show loading state
+            result.innerHTML = '<p style="color:#666;">Searching...</p>';
+
+            try {
+                // Call backend API instead of local JSON
+                const res = await fetch(`/api/search/${code}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    title.innerText = `Result for code "${code}"`;
+                    result.innerHTML = `
+                        <div class="placeholder-state">
+                            <p>No activity found for this NIC code.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                title.innerText = `Result for code ${data.code}`;
+                result.innerHTML = `
+                    <div class="code-row" style="border-bottom: 1px solid #eee; padding: 16px 0;">
+                        <strong style="color:#2c3e50; display:block; margin-bottom:4px;">${data.code}</strong>
+                        <span style="color:#444;">${data.description}</span>
+                    </div>
+                `;
+            } catch (err) {
+                console.error('Search error:', err);
+                title.innerText = `Result for code "${code}"`;
+                result.innerHTML = `
+                    <div class="placeholder-state">
+                        <p style="color:red;">Error searching for code. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

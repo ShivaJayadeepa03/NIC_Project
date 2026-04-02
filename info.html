@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIC Code Directory | Integrated Version</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo">
+            <img src="logo.jpeg" alt="Application Logo" class="app-logo">
+        </div>
+        <nav class="nav-buttons">
+            <a href="/">
+                <button class="btn">Home</button>
+            </a>
+            <a href="/info">
+                <button class="btn active">Categories</button>
+            </a>
+            <a href="/search">
+                <button class="btn">Code Lookup</button>
+            </a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="info-intro">
+            <h2>National Industrial Classification Directory</h2>
+            <p>Select a category to explore the industrial activity codes.</p>
+        </section>
+
+        <div class="category-grid" id="categoryGrid"></div>
+
+        <div class="results-wrapper">
+            <div class="results-header">
+                <h3 id="selectedCategoryTitle">Select a category above</h3>
+                <span id="resultCount" class="badge">0 codes found</span>
+            </div>
+            
+            <div id="codesList" class="codes-list" style="background:#fafafa; border-radius:8px; padding:12px; min-height:40px;">
+                <div class="placeholder-state">
+                    <p>Detailed NIC codes will appear here after selection.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    // These will be filled from finaldataset_yourgpt.json at runtime
+    let rawJsonData = [];
+    let globalNicData = [];
+
+    const sectionMapping = {
+        'A': ['01', '02', '03'], 'B': ['05', '06', '07', '08', '09'], 'C': ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33'],
+        'D': ['35'], 'E': ['36', '37', '38', '39'], 'F': ['41', '42', '43'], 'G': ['45', '46', '47'], 'H': ['49', '50', '51', '52', '53'], 'I': ['55', '56'], 'J': ['58', '59', '60'],
+        'K': ['61', '62', '63'], 'L': ['64', '65', '66'], 'M': ['68'], 'N': ['69', '70', '71', '72', '73', '74', '75'], 'O': ['77', '78', '79', '80', '81', '82'], 'P': ['84'], 'Q': ['85'], 'R': ['86', '87', '88'], 'S': ['90', '91', '92', '93'],
+        'T': ['94', '95', '96'], 'U': ['97', '98'], 'V': ['99']
+    };
+
+    // Create a reverse mapping from division to section for easier lookup
+    const divisionToSection = {};
+    Object.entries(sectionMapping).forEach(([section, divisions]) => {
+        divisions.forEach(division => {
+            divisionToSection[division] = section;
+        });
+    });
+
+    // Add debug logging to help identify issues
+    console.log('Section mapping loaded:', sectionMapping);
+    console.log('Division to section mapping:', divisionToSection);
+
+    // Simple CSV parser that handles quoted fields with newlines
+    function parseCSV(text) {
+        const lines = [];
+        let currentLine = [];
+        let current = '';
+        let inQuotes = false;
+        let i = 0;
+        while (i < text.length) {
+            const char = text[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+                current += char;
+            } else if (char === ',' && !inQuotes) {
+                currentLine.push(current.replace(/^"|"$/g, ''));
+                current = '';
+            } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                if (currentLine.length > 0 || current) {
+                    currentLine.push(current.replace(/^"|"$/g, ''));
+                    lines.push(currentLine);
+                    currentLine = [];
+                    current = '';
+                }
+            } else {
+                current += char;
+            }
+            i++;
+        }
+        if (currentLine.length > 0 || current) {
+            currentLine.push(current.replace(/^"|"$/g, ''));
+            lines.push(currentLine);
+        }
+        return lines.slice(1); // skip header
+    }
+
+    // Load the CSV file when the page opens
+    window.onload = () => {
+        fetch('latest_NIC_dataset.csv')
+            .then(res => res.text())
+            .then(data => {
+                const lines = parseCSV(data);
+                rawJsonData = lines.map(parts => {
+                    if (parts.length >= 4) {
+                        return {
+                            group: parts[0],
+                            class: parts[1],
+                            subClass: parts[2],
+                            description: parts[3]
+                        };
+                    }
+                    return null;
+                }).filter(item => item && (item.subClass || item.class || item.group));
+                processData();
+                renderCategories();
+            })
+            .catch(err => {
+                console.error('Failed to load NIC CSV:', err);
+            });
+    };
+
+    // Turn the raw NIC CSV into a clean
+    // [{ code, description, division }] array.
+    function processData() {
+        const cleanArray = [];
+        rawJsonData.forEach(item => {
+            const code = item.group || item.class || item.subClass;
+            if (code && /^\d+$/.test(code) && code.length >= 2) {
+                const description = item.description;
+                const division = code.slice(0, 2);
+                cleanArray.push({
+                    code,
+                    description,
+                    division
+                });
+            }
+        });
+        globalNicData = cleanArray;
+        console.log('Total valid codes extracted:', globalNicData.length);
+        console.log('Sample codes:', globalNicData.slice(0, 5));
+        console.log('Sample divisions:', globalNicData.slice(0, 5).map(item => item.division));
+    }
+
+    function renderCategories() {
+        const grid = document.getElementById('categoryGrid');
+        const sections = [
+            { id: 'A', title: 'Agriculture & Fishing' }, { id: 'B', title: 'Mining' },
+            { id: 'C', title: 'Manufacturing' }, { id: 'D', title: 'Electricity & Gas' },
+            { id: 'E', title: 'Water & Waste' }, { id: 'F', title: 'Construction' },
+            { id: 'G', title: 'Trade' }, { id: 'H', title: 'Transport' },
+            { id: 'I', title: 'Accommodation' }, { id: 'J', title: 'Communication' },
+            { id: 'K', title: 'Finance' }, { id: 'L', title: 'Real Estate' },
+            { id: 'M', title: 'Professional' }, { id: 'N', title: 'Administrative' },
+            { id: 'O', title: 'Public Admin' }, { id: 'P', title: 'Education' },
+            { id: 'Q', title: 'Health' }, { id: 'R', title: 'Arts' },
+            { id: 'S', title: 'Other Services' }, { id: 'T', title: 'Households' },
+            { id: 'U', title: 'Extraterritorial' }, { id: 'V', title: 'Additional Section' }
+        ];
+
+        grid.innerHTML = '';
+        sections.forEach(sec => {
+            const div = document.createElement('div');
+            div.className = 'cat-card';
+            div.innerHTML = `<strong>Section ${sec.id}</strong><p>${sec.title}</p>`;
+            div.onclick = () => filterCodes(sec.id, sec.title, div);
+            grid.appendChild(div);
+        });
+    }
+
+    function filterCodes(id, title, element) {
+        document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('active'));
+        element.classList.add('active');
+        document.getElementById('selectedCategoryTitle').innerText = title;
+
+        const prefixes = (sectionMapping[id] || []).map(p => String(p).trim());
+        console.log(`Filtering for section ${id}, prefixes:`, prefixes);
+        
+        const matches = globalNicData.filter(item => {
+            // Use the first two digits of the code itself rather than relying
+            // on the precomputed "division" field. That field was derived
+            // from the data and occasionally mis‑assigned if the source JSON
+            // didn't include a fresh DIVISION header before a new block of
+            // codes.  By slicing the code we ensure section K codes (64xx)
+            // always end up under section K.
+            const code = String(item.code || '').trim();
+            if (code.length < 2) return false;
+            const division = code.slice(0, 2);
+            const matches = prefixes.includes(division);
+            if (matches && id === 'A') {
+                console.log(`Code ${code} with division ${division} matches section A`);
+            }
+            return matches;
+        });
+
+        matches.sort((a, b) => a.code.localeCompare(b.code));
+
+        console.log(`Found ${matches.length} matches for section ${id}`);
+        renderResults(matches);
+    }
+
+    function renderResults(dataArray) {
+        const listDisplay = document.getElementById('codesList');
+        document.getElementById('resultCount').innerText = `${dataArray.length} codes found`;
+
+        if (dataArray.length === 0) {
+            listDisplay.innerHTML = `
+                <div class="placeholder-state">
+                    <p>No activity codes found. Check the console (F12) to see if data loaded.</p>
+                </div>`;
+            // Smoothly scroll the results into view even when empty
+            listDisplay.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+        }
+
+        listDisplay.innerHTML = dataArray.map(rawItem => {
+            const code = String(rawItem.code || '').trim();
+            const description = String(rawItem.description || '').replace(/\n/g, '<br>');
+            return `
+            <div class="code-row" style="border-bottom: 1px solid #eee; padding: 12px 0; display: flex;">
+                <strong style="color: #2c3e50; min-width: 85px;">${code}</strong>
+                <span style="flex: 1; color: #444;">${description}</span>
+            </div>
+        `;
+        }).join('');
+
+        // After rendering results, smoothly scroll the list into view
+        listDisplay.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+</script>
+</body>
+</html>

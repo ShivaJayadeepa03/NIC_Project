@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIC Code Classifier</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo">
+            <img src="logo.jpeg" alt="Application Logo" class="app-logo">
+        </div>
+        <nav class="nav-buttons">
+            <a href="/">
+                <button class="btn active">Home</button>
+            </a>
+            <a href="/info">
+                <button class="btn">Categories</button>
+            </a>
+            <a href="/search">
+                <button class="btn">Code Lookup</button>
+            </a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="search-section">
+            <h2>Identify Your Business Classification</h2>
+            <p>Enter your business activity description below to find the most accurate NIC code.</p>
+            <div class="search-box">
+                <textarea id="descriptionInput" placeholder="e.g., Manufacturing of organic light-emitting diodes (OLED) for mobile devices..."></textarea>
+                <button class="btn-search" id="predictButton">Search NIC Code</button>
+            </div>
+            <div id="predictionResult" class="prediction-result"></div>
+        </section>
+
+        <section class="info-grid">
+            <div class="card">
+                <h3>Explore Categories</h3>
+                <p>Navigate through the 22 official industrial sections, from Agriculture to the newly added Digital Economy. Our intuitive grid layout allows you to drill down from broad sectors to specific activity codes in just a few clicks.</p>
+            </div>
+            <div class="card">
+                <h3>Stay Updated</h3>
+                <p>Ensure your business compliance with the latest National Industrial Classification (NIC) 2025 standards. We feature the expanded 6-digit coding structure, including modern sectors like Fintech, Green Energy, and AYUSH.</p>
+            </div>
+            <div class="card">
+                <h3>Search & Identify</h3>
+                <p>Quickly find the exact code for your enterprise. Whether you are registering for Udyam or filing official documentation, our classifier provides the precise 2, 4, and 6-digit hierarchy required for accurate industrial reporting.</p>
+            </div>
+            <div class="card">
+                <h3>Business Ready</h3>
+                <p>Bridge the gap between your industrial activities and official government requirements. Our classifier is mapped to the latest MoSPI standards, making it the perfect tool for Udyam Registration, GST categorization, and MSME documentation.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 IntelliCode Systems | Standardizing Industrial Classification</p>
+    </footer>
+
+    <script>
+        const textarea = document.getElementById('descriptionInput');
+        const button = document.getElementById('predictButton');
+        const resultDiv = document.getElementById('predictionResult');
+
+        async function callPredict() {
+            const desc = textarea.value.trim();
+            if (!desc) {
+                resultDiv.style.display = 'none';
+                return;
+            }
+
+            resultDiv.style.display = 'none';
+
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description: desc })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    // Keep the box hidden for error states
+                    resultDiv.style.display = 'none';
+                    return;
+                }
+
+                resultDiv.textContent = 'Predicted NIC Code: ' + data.nic_code;
+                resultDiv.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                resultDiv.textContent = 'Error contacting server. Please try again.';
+            }
+        }
+
+        button.addEventListener('click', callPredict);
+    </script>
+</body>
+</html>
