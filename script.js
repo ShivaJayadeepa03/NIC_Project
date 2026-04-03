@@ -14,9 +14,9 @@ window.onload = () => {
 };
 
 function loadCSV() {
-    Papa.parse("nic_codes.csv", {
+    Papa.parse("/static/latest_nic_dataset.csv", {
         download: true,
-        header: true, // Uses your CSV's first row as keys
+        header: true,
         complete: function(results) {
             globalNicData = results.data;
             console.log("CSV Loaded successfully:", globalNicData.length, "rows found.");
