@@ -14,7 +14,7 @@ window.onload = () => {
 };
 
 function loadCSV() {
-    Papa.parse("/static/latest_nic_dataset.csv", {
+    Papa.parse("/static/latest_nic_dataset.csv"), {
         download: true,
         header: true,
         complete: function(results) {

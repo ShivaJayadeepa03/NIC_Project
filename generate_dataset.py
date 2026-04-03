@@ -1,7 +1,7 @@
 import pandas as pd
 import random
 
-df = pd.read_csv("latest_NIC_dataset.csv")
+df = pd.read_csv("/static/latest_nic_dataset.csv")
 df.columns = df.columns.str.strip()
 df = df[['Sub-Class', 'Description']]
 df.columns = ['NIC_code', 'Description']

@@ -107,7 +107,7 @@
 
     // Load the CSV file when the page opens
     window.onload = () => {
-        fetch('latest_NIC_dataset.csv')
+        fetch("/static/latest_nic_dataset.csv")
             .then(res => res.text())
             .then(data => {
                 const lines = parseCSV(data);
