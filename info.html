@@ -197,19 +197,24 @@
     }
 
     function filterCodes(id, title, element) {
-        document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('active'));
-        element.classList.add('active');
+    document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('active'));
+    element.classList.add('active');
 
-        document.getElementById('selectedCategoryTitle').innerText = title;
+    document.getElementById('selectedCategoryTitle').innerText = title;
 
-        const prefixes = sectionMapping[id] || [];
+    const prefixes = sectionMapping[id] || [];
 
-        const matches = globalNicData.filter(item =>
-            prefixes.includes(item.code.slice(0, 2))
-        );
+    const matches = globalNicData.filter(item =>
+        prefixes.includes(item.code.slice(0, 2))
+    );
 
-        renderResults(matches);
-    }
+    renderResults(matches);
+
+    document.getElementById('codesList').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+    });
+}
 
     function renderResults(dataArray) {
         const listDisplay = document.getElementById('codesList');
